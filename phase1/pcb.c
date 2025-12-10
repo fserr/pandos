@@ -158,7 +158,7 @@ pcb_t* removeChild(pcb_t* p) {
         return NULL;
     }
     pcb_t* tmp = container_of(p->p_child.next, pcb_t, p_sib);    //container_of returns the ptr to the struct (pcb_t) containing p->p_child.next
-    list_del(&p->p_child.next);         //deletes the references to &p->p_child.next inside the list of p_sib linking the prev and the next siblings together
+    list_del(p->p_child.next);         //deletes the references to &p->p_child.next inside the list of p_sib linking the prev and the next siblings together
     tmp->p_parent = NULL;
     return tmp;
 }
