@@ -33,34 +33,39 @@ int insertBlocked(int* semAdd, pcb_t* p) {
     /* If semaphore is not active, allocate a new one */
     if (sem == NULL) {
         if (list_empty(&semdFree_h))    return TRUE;
-    }
-
-    /* Remove from free list */
-    struct list_head *new_node = semdFree_h.next;
-    list_del(new_node);
-    sem = container_of(new_node, semd_t, s_link);
-
-    /* Initialize new semaphore */
-    sem->s_key = semAdd;
-    INIT_LIST_HEAD(&sem->s_procq);
-
-    /* Insert into ASL in sorted order (ascending by key) */
-    struct list_head *pos;
-    int inserted = 0;
-    list_for_each(pos, &semd_h) {
-        semd_t *entry = container_of(pos, semd_t, s_link);
-        if (entry->s_key > semAdd) {
-            /* Insert before the current larger element */
-            __list_add(&sem->s_link, pos->prev, pos);
-            inserted = 1;
-            break;
+        
+        /* Remove from free list */
+        struct list_head *new_node = semdFree_h.next;
+        list_del(new_node);
+        sem = container_of(new_node, semd_t, s_link);
+        
+        /* Initialize new semaphore */
+        sem->s_key = semAdd;
+        INIT_LIST_HEAD(&sem->s_procq);
+        
+        /* Insert into ASL in sorted order (ascending by key) */
+        struct list_head *pos;
+        int inserted = 0;
+        list_for_each(pos, &semd_h) {
+            semd_t *entry = container_of(pos, semd_t, s_link);
+            if (entry->s_key > semAdd) {
+                /* Insert before the current larger element */
+                __list_add(&sem->s_link, pos->prev, pos);
+                inserted = 1;
+                break;
+            }
+        }
+        /* If not inserted yet (list empty or largest key), add to tail */
+        if (!inserted) {
+            list_add_tail(&sem->s_link, &semd_h);
         }
     }
-    /* If not inserted yet (list empty or largest key), add to tail */
-    if (!inserted) {
-        list_add_tail(&sem->s_link, &semd_h);
-    }
+    
+    /* Add the PCB to the tail of the semaphore's process queue */
+    list_add_tail(&p->p_list, &sem->s_procq);
+    p->p_semAdd = semAdd;
 
+    return FALSE;
 }
 
 /* Search the ASL for a descriptor of this semaphore. If none is found, return NULL; otherwise,
